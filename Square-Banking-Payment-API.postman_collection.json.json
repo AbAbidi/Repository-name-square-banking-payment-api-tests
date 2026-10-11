@@ -1,0 +1,1420 @@
+{
+  "info": {
+    "_postman_id": "82e396b2-20aa-41a3-838d-80291c83abaf",
+    "name": "Square Banking_Payment API - QA Test Suite",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58531958",
+    "_collection_link": "https://go.postman.co/collection/58531958-82e396b2-20aa-41a3-838d-80291c83abaf?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "SETUP-001 — List Locations — Valid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Valid token returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains locations\", function () {\r\n    pm.expect(body.locations).to.be.an(\"array\").that.is.not.empty;\r\n});\r\n\r\nconst activeLocation = body.locations?.find(\r\n    location => location.status === \"ACTIVE\"\r\n);\r\n\r\npm.test(\"An active location exists\", function () {\r\n    pm.expect(activeLocation).to.exist;\r\n    pm.expect(activeLocation.id).to.be.a(\"string\").and.not.empty;\r\n});\r\n\r\nif (activeLocation) {\r\n    pm.collectionVariables.set(\r\n        \"locationId\",\r\n        activeLocation.id\r\n    );\r\n\r\n    if (activeLocation.currency) {\r\n        pm.collectionVariables.set(\r\n            \"currency\",\r\n            activeLocation.currency\r\n        );\r\n    }\r\n}"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {
+              "content-type": true
+            }
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AUTH-001 — List Locations — Missing Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Missing token returns 401\", function () {\r\n    pm.response.to.have.status(401);\r\n});\r\n\r\npm.test(\"Authentication error is returned\", function () {\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n    pm.expect(body.errors[0].category)\r\n        .to.equal(\"AUTHENTICATION_ERROR\");\r\n    pm.expect(body.errors[0].code)\r\n        .to.equal(\"UNAUTHORIZED\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AUTH-002 — List Locations — Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Repeated identical request returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"The same payment is returned\", function () {\r\n    pm.expect(body.payment).to.exist;\r\n\r\n    pm.expect(body.payment.id).to.equal(\r\n        pm.collectionVariables.get(\r\n            \"firstIdempotentPaymentId\"\r\n        )\r\n    );\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid-sandbox-token-123",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"idem-test-001\",\r\n  \"source_id\": \"cnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": 1000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Payment Input validation",
+      "item": [
+        {
+          "name": "VAL-001 — Missing source_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response contains an errors array\", function () {\r\n    pm.expect(response.errors).to.be.an(\"array\");\r\n    pm.expect(response.errors).to.not.be.empty;\r\n});\r\n\r\npm.test(\"Error category is INVALID_REQUEST_ERROR\", function () {\r\n    pm.expect(response.errors[0].category)\r\n        .to.eql(\"INVALID_REQUEST_ERROR\");\r\n});\r\n\r\npm.test(\"Error code is MISSING_REQUIRED_PARAMETER\", function () {\r\n    pm.expect(response.errors[0].code)\r\n        .to.eql(\"VALUE_EMPTY\");\r\n});\r\n\r\npm.test(\"The missing field is source_id\", function () {\r\n    pm.expect(response.errors[0].field)\r\n        .to.eql(\"source_id\");\r\n});\r\n\r\npm.test(\"No payment was created\", function () {\r\n    pm.expect(response).to.not.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"amount_money\": {\n    \"amount\": 1000,\n    \"currency\": \"USD\" // define the code\n  },\n  \"autocomplete\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-002 — Empty source_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response contains an errors array\", function () {\r\n    pm.expect(response.errors).to.be.an(\"array\");\r\n    pm.expect(response.errors).to.not.be.empty;\r\n});\r\n\r\npm.test(\"Error category is INVALID_REQUEST_ERROR\", function () {\r\n    pm.expect(response.errors[0].category)\r\n        .to.eql(\"INVALID_REQUEST_ERROR\");\r\n});\r\n\r\npm.test(\"Error code is MISSING_REQUIRED_PARAMETER\", function () {\r\n    pm.expect(response.errors[0].code)\r\n        .to.eql(\"VALUE_EMPTY\");\r\n});\r\n\r\npm.test(\"The missing field is source_id\", function () {\r\n    pm.expect(response.errors[0].field)\r\n        .to.eql(\"source_id\");\r\n});\r\n\r\npm.test(\"No payment was created\", function () {\r\n    pm.expect(response).to.not.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"source_id\": \"\",\n  \"amount_money\": {\n    \"amount\": 1000,\n    \n    \"currency\": \"USD\" // define the code\n  },\n  \"autocomplete\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-003 — Invalid source_id Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"invalid source_id returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"invalid source_id returns the expected error\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(e => e.field === \"source_id\");\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.code).to.equal(\"EXPECTED_STRING\");\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"source_id\": 87458,\n  \"amount_money\": {\n    \"amount\": 1000,\n    \"currency\": \"USD\" // define the code\n  },\n  \"autocomplete\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-004 —  Invalid Currency code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"invalid currency returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"invalid currency returns the expected error\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(e => e.field === \"amount_money.currency\");\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.code).to.equal(\"EXPECTED_STRING\");\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"source_id\": \"scnon:card-nonce-ok\",\n  \"amount_money\": {\n    \"amount\": 1000,\n    \"currency\": \"eurroo\" // define the code\n  },\n  \"autocomplete\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-006 — Invalid Currency Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"invalid currency returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"invalid currency returns the expected error\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(e => e.field === \"amount_money.currency\");\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.code).to.equal(\"EXPECTED_STRING\");\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"{{$guid}}\",\r\n  \"source_id\": \"scnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": 1000,\r\n    \"currency\": 123\r\n  },\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-007 — Negative Amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"invalid currency returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Negative currency returns the expected error\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(e => e.field === \"amount_money\");\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.code).to.equal(\"VALUE_TOO_LOW\");\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"{{$guid}}\",\r\n  \"source_id\": \"cnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": -1000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-008 — Invalid Amount Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"invalid amount returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Invalid amount returns the expected error\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(\r\n        errorItem => errorItem.field === \"amount_money.amount\"\r\n    );\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.code).to.equal(\"EXPECTED_INTEGER\");\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n    pm.expect(error.detail)\r\n        .to.equal(\"Expected an integer value (line 5, character 15)\");\r\n\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"source_id\": \"cnon:card-nonce-ok\",\n  \"amount_money\": {\n    \"amount\": \"invalid\",\n    \"currency\": \"{{currency}}\"\n  },\n  \"autocomplete\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "VAL-009 — Fractional Amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Fractional returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Fractiona amount returns the expected error\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(\r\n        errorItem => errorItem.field === \"amount_money.amount\"\r\n    );\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.code).to.equal(\"EXPECTED_INTEGER\");\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n\r\n    pm.expect(error.detail).to.include(\"Expected an integer value\");\r\n\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"source_id\": \"cnon:card-nonce-ok\",\n  \"amount_money\": {\n    \"amount\": 10.3,\n    \"currency\": \"{{currency}}\" // define the code\n  },\n  \"autocomplete\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 — Successful Payment Workflow",
+      "item": [
+        {
+          "name": "PAY-001 — Create Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Create Payment returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Payment contains the expected data\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.payment).to.exist;\r\n    pm.expect(body.payment.id).to.be.a(\"string\").and.not.empty;\r\n    pm.expect(body.payment.amount_money.amount).to.equal(2500);\r\n    pm.expect(body.payment.amount_money.currency)\r\n        .to.equal(pm.collectionVariables.get(\"currency\"));\r\n    pm.expect(body.payment.location_id)\r\n        .to.equal(pm.collectionVariables.get(\"locationId\"));\r\n    pm.expect(body.payment.status).to.equal(\"COMPLETED\");\r\n});\r\n\r\n// Save only a successfully completed payment for the next request.\r\nif (pm.response.code === 200) {\r\n    const body = pm.response.json();\r\n\r\n    if (body.payment && body.payment.status === \"COMPLETED\") {\r\n        pm.collectionVariables.set(\"paymentId\", body.payment.id);\r\n    }\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "37ca9c97-d1d1-4c62-89e8-706891a563ed",
+                "description": "A unique identifier for the message with a maximum of 64 characters (we recommend a UUID)."
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotency_key\": \"{{$guid}}\",\n  \"source_id\": \"cnon:card-nonce-ok\",\n  \"location_id\": \"{{locationId}}\",\n  \"amount_money\": {\n    \"amount\": 2500,\n    \"currency\": \"{{currency}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PAY-002 — Get Created Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Get Payment returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Retrieved payment matches the created payment\", function () {\r\n    const body = pm.response.json();\r\n\r\n    pm.expect(body.payment).to.exist;\r\n    pm.expect(body.payment.id)\r\n        .to.equal(pm.collectionVariables.get(\"paymentId\"));\r\n    pm.expect(body.payment.amount_money.amount).to.equal(2500);\r\n    pm.expect(body.payment.amount_money.currency)\r\n        .to.equal(pm.collectionVariables.get(\"currency\"));\r\n    pm.expect(body.payment.location_id)\r\n        .to.equal(pm.collectionVariables.get(\"locationId\"));\r\n    pm.expect(body.payment.status).to.equal(\"COMPLETED\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 — Idempotency",
+      "item": [
+        {
+          "name": "IDEM-001 — Create Payment with Saved Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains a payment\", function () {\r\n    pm.expect(body.payment).to.exist;\r\n    pm.expect(body.payment.id).to.be.a(\"string\");\r\n});\r\n\r\nconst firstPaymentId =\r\n    pm.collectionVariables.get(\"firstIdempotentPaymentId\");\r\n\r\nif (!firstPaymentId) {\r\n    pm.collectionVariables.set(\r\n        \"firstIdempotentPaymentId\",\r\n        body.payment.id\r\n    );\r\n\r\n    console.log(\"First payment ID saved:\", body.payment.id);\r\n\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"idem-test-001\",\r\n  \"source_id\": \"cnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": 1000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "IDEM-002 — Repeat Same Key and Payload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\nconsole.log(\"Complete response:\", body);\r\n\r\npm.test(\"Status code is 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Idempotency key was reused incorrectly\", function () {\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n\r\n    const error = body.errors.find(\r\n        errorItem =>\r\n            errorItem.code === \"IDEMPOTENCY_KEY_REUSED\"\r\n    );\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"idem-test-001\",\r\n  \"source_id\": \"cnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": 2000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "IDEM-003 — Same Key with Different Payload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Status code is 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response contains an errors array\", function () {\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n});\r\n\r\npm.test(\"Same key with different payload is rejected\", function () {\r\n    const error = body.errors.find(\r\n        errorItem =>\r\n            errorItem.code === \"IDEMPOTENCY_KEY_REUSED\"\r\n    );\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.category).to.equal(\"INVALID_REQUEST_ERROR\");\r\n  \r\n    pm.expect(error.detail).include(\"Different request parameters used for the same idempotency_key: idem-test-001\");\r\n    pm.expect(body).not.to.have.property(\"payment\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"idem-test-001\",\r\n  \"source_id\": \"cnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": 2000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 — Declined Payments",
+      "item": [
+        {
+          "name": "DECL001-Generic Card Decline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Generic decline returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Generic decline error is returned\", function () {\r\n    const error = body.errors.find(\r\n        errorItem => errorItem.code === \"GENERIC_DECLINE\"\r\n    );\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.category)\r\n        .to.equal(\"PAYMENT_METHOD_ERROR\");\r\n});\r\n\r\npm.test(\"Payment attempt is recorded as failed\", function () {\r\n    pm.expect(body.payment).to.exist;\r\n    pm.expect(body.payment.status).to.equal(\"FAILED\");\r\n    pm.expect(body.payment.approved_money.amount).to.equal(0);\r\n});\r\n\r\nif (body.payment?.id) {\r\n    pm.collectionVariables.set(\r\n        \"declinedPaymentId\",\r\n        body.payment.id\r\n    );\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"{{$guid}}\",\r\n  \"source_id\": \"cnon:card-nonce-declined\",\r\n  \"amount_money\": {\r\n    \"amount\": 1000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"location_id\": \"{{locationId}}\",\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DECL-002 — CVV Failure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"CVV failure returns 400\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Response contains an errors array\", function () {\r\n    pm.expect(body.errors).to.be.an(\"array\").that.is.not.empty;\r\n});\r\n\r\npm.test(\"Response contains a CVV failure\", function () {\r\n    const error = body.errors.find(\r\n        errorItem =>\r\n            errorItem.code === \"CVV_FAILURE\"\r\n    );\r\n\r\n    pm.expect(error).to.exist;\r\n    pm.expect(error.category).to.equal(\"PAYMENT_METHOD_ERROR\");\r\n});\r\n\r\npm.test(\"A failed payment attempt was recorded\", function () {\r\n    pm.expect(body.payment).to.exist;\r\n    pm.expect(body.payment.id).to.be.a(\"string\").and.not.empty;\r\n    pm.expect(body.payment.status).to.equal(\"FAILED\");\r\n});\r\n\r\npm.test(\"Card processing status is FAILED\", function () {\r\n    pm.expect(body.payment.card_details).to.exist;\r\n    pm.expect(body.payment.card_details.status).to.equal(\"FAILED\");\r\n\r\n    const cardError = body.payment.card_details.errors.find(\r\n        errorItem =>\r\n            errorItem.code === \"CVV_FAILURE\"\r\n    );\r\n\r\n    pm.expect(cardError).to.exist;\r\n    pm.expect(cardError.category)\r\n        .to.equal(\"PAYMENT_METHOD_ERROR\");\r\n});\r\npm.test(\"CVV was rejected\", function () {\r\n    pm.expect(body.payment.card_details.cvv_status)\r\n        .to.equal(\"CVV_REJECTED\");\r\n});\r\n\r\npm.test(\"Address verification was accepted\", function () {\r\n    pm.expect(body.payment.card_details.avs_status)\r\n        .to.equal(\"AVS_ACCEPTED\");\r\n});\r\n\r\npm.test(\"No money was approved\", function () {\r\n    pm.expect(body.payment.approved_money.amount).to.equal(0);\r\n    pm.expect(body.payment.approved_money.currency)\r\n        .to.equal(pm.variables.get(\"currency\"));\r\n});\r\n\r\npm.test(\"Requested payment information is preserved\", function () {\r\n    pm.expect(body.payment.amount_money.amount).to.equal(1000);\r\n    pm.expect(body.payment.amount_money.currency)\r\n        .to.equal(pm.variables.get(\"currency\"));\r\n\r\n    pm.expect(body.payment.location_id)\r\n        .to.equal(pm.variables.get(\"locationId\"));\r\n});\r\n\r\npm.collectionVariables.set(\r\n    \"cvvFailedPaymentId\",\r\n    body.payment.id\r\n);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"{{$guid}}\",\r\n  \"source_id\": \"cnon:card-nonce-rejected-cvv\",\r\n  \"amount_money\": {\r\n    \"amount\": 1000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"location_id\": \"{{locationId}}\",\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 — Refund Workflow",
+      "item": [
+        {
+          "name": "REF-001 — Create Refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Refundable payment returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Payment is completed\", function () {\r\n    pm.expect(body.payment).to.exist;\r\n    pm.expect(body.payment.status).to.equal(\"COMPLETED\");\r\n});\r\n\r\nif (body.payment?.status === \"COMPLETED\") {\r\n    pm.collectionVariables.set(\r\n        \"refundablePaymentId\",\r\n        body.payment.id\r\n    );\r\n\r\n    pm.collectionVariables.set(\r\n        \"refundableAmount\",\r\n        body.payment.amount_money.amount\r\n    );\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"{{$guid}}\",\r\n  \"source_id\": \"cnon:card-nonce-ok\",\r\n  \"amount_money\": {\r\n    \"amount\": 1000,\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"location_id\": \"{{locationId}}\",\r\n  \"autocomplete\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "REF-002 — Full Refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Full refund returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains a refund\", function () {\r\n    pm.expect(body.refund).to.exist;\r\n    pm.expect(body.refund.id).to.be.a(\"string\");\r\n});\r\n\r\nif (body.refund) {\r\n    pm.test(\"Refund references the correct payment\", function () {\r\n        pm.expect(body.refund.payment_id).to.equal(\r\n            pm.collectionVariables.get(\"refundablePaymentId\")\r\n        );\r\n    });\r\n\r\n    pm.test(\"Refund status is valid\", function () {\r\n        pm.expect(body.refund.status).to.be.oneOf([\r\n            \"PENDING\",\r\n            \"COMPLETED\"\r\n        ]);\r\n    });\r\n\r\n    pm.collectionVariables.set(\r\n        \"refundId\",\r\n        body.refund.id\r\n    );\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"idempotency_key\": \"{{$guid}}\",\r\n  \"payment_id\": \"{{refundablePaymentId}}\",\r\n  \"amount_money\": {\r\n    \"amount\": {{refundableAmount}},\r\n    \"currency\": \"{{currency}}\"\r\n  },\r\n  \"reason\": \"Postman full refund test\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/refunds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "refunds"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "REF-002 — Get Created Refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Get refund returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Correct refund is returned\", function () {\r\n    pm.expect(body.refund).to.exist;\r\n\r\n    pm.expect(body.refund.id).to.equal(\r\n        pm.collectionVariables.get(\"refundId\")\r\n    );\r\n\r\n    pm.expect(body.refund.payment_id).to.equal(\r\n        pm.collectionVariables.get(\"refundablePaymentId\")\r\n    );\r\n});\r\n\r\npm.test(\"Refund status is valid\", function () {\r\n    pm.expect(body.refund.status).to.be.oneOf([\r\n        \"PENDING\",\r\n        \"COMPLETED\",\r\n        \"FAILED\",\r\n        \"REJECTED\"\r\n    ]);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/refunds/{{refundId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "refunds",
+                "{{refundId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 — Payment Listing",
+      "item": [
+        {
+          "name": "LIST-001 — List Payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"List payments returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains a payments array\", function () {\r\n    pm.expect(body.payments).to.be.an(\"array\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "LIST-002 — Filter Payments Location ID/Begin\\End/Sort_order/Limit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Filtered payments request returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains a payments array\", function () {\r\n    pm.expect(body.payments).to.be.an(\"array\");\r\n});\r\n\r\nif (Array.isArray(body.payments)) {\r\n    const beginTime = Date.parse(\r\n        pm.variables.get(\"filterBeginTime\")\r\n    );\r\n\r\n    const endTime = Date.parse(\r\n        pm.variables.get(\"filterEndTime\")\r\n    );\r\n\r\n    pm.test(\"Every payment belongs to the selected location\", function () {\r\n        body.payments.forEach(function (payment) {\r\n            pm.expect(payment.location_id)\r\n                .to.equal(pm.variables.get(\"locationId\"));\r\n        });\r\n    });\r\n\r\n    pm.test(\"Every payment is inside the selected date range\", function () {\r\n        body.payments.forEach(function (payment) {\r\n            const paymentTime = Date.parse(payment.created_at);\r\n\r\n            pm.expect(paymentTime).to.be.at.least(beginTime);\r\n            pm.expect(paymentTime).to.be.at.most(endTime);\r\n        });\r\n    });\r\n\r\n    pm.test(\"Payments are sorted from newest to oldest\", function () {\r\n        for (let index = 1; index < body.payments.length; index++) {\r\n            const previousPaymentTime = Date.parse(\r\n                body.payments[index - 1].created_at\r\n            );\r\n\r\n            const currentPaymentTime = Date.parse(\r\n                body.payments[index].created_at\r\n            );\r\n\r\n            pm.expect(previousPaymentTime)\r\n                .to.be.at.least(currentPaymentTime);\r\n        }\r\n    });\r\n\r\n    pm.test(\"No more than 10 payments are returned\", function () {\r\n        pm.expect(body.payments.length).to.be.at.most(10);\r\n    });\r\n}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const endTime = new Date();\r\nconst beginTime = new Date(\r\n    endTime.getTime() - 7 * 24 * 60 * 60 * 1000\r\n);\r\n\r\npm.variables.set(\r\n    \"filterBeginTime\",\r\n    beginTime.toISOString()\r\n);\r\n\r\npm.variables.set(\r\n    \"filterEndTime\",\r\n    endTime.toISOString()\r\n);\r\n\r\nconsole.log(\"Filter begins:\", beginTime.toISOString());\r\nconsole.log(\"Filter ends:\", endTime.toISOString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "LIST-003 — Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"First page returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"First page returns a maximum of 2 payments\", function () {\r\n    pm.expect(body.payments).to.be.an(\"array\");\r\n    pm.expect(body.payments.length).to.be.at.most(2);\r\n});\r\n\r\npm.test(\"Cursor exists for the next page\", function () {\r\n    pm.expect(body.cursor).to.be.a(\"string\").and.not.empty;\r\n});\r\n\r\nif (body.cursor) {\r\n    pm.collectionVariables.set(\r\n        \"paymentsCursor\",\r\n        body.cursor\r\n    );\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "GET {{baseUrl}}/payments?limit=2",
+              "host": [
+                "GET {{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "LIST-004 — Pagination — Get Second Page",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\r\n\r\npm.test(\"Second page returns 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Second page returns a maximum of 2 payments\", function () {\r\n    pm.expect(body.payments).to.be.an(\"array\");\r\n    pm.expect(body.payments.length).to.be.at.most(2);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?limit=2&cursor={{paymentsCursor}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{paymentsCursor}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "access token",
+      "secret": true
+    },
+    {
+      "key": "locationId",
+      "value": ""
+    },
+    {
+      "key": "currency",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    },
+    {
+      "key": "idempotencyPaymentId",
+      "value": ""
+    },
+    {
+      "key": "firstIdempotentPaymentId",
+      "value": ""
+    },
+    {
+      "key": "declinedPaymentId",
+      "value": ""
+    },
+    {
+      "key": "cvvFailedPaymentId",
+      "value": ""
+    },
+    {
+      "key": "refundablePaymentId",
+      "value": ""
+    },
+    {
+      "key": "refundableAmount",
+      "value": ""
+    },
+    {
+      "key": "refundId",
+      "value": ""
+    },
+    {
+      "key": "paymentsCursor",
+      "value": ""
+    }
+  ]
+}
